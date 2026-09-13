@@ -7,6 +7,6 @@ Write-Host "SmartStudio ready. Run: conda run -n smartstudio python web_server.p
 if ($WithSubtitles) {
   $subtitle='models/faster-whisper-large-v3-turbo'
   if (!(Test-Path $subtitle)) {
-    conda run -n smartstudio huggingface-cli download Systran/faster-whisper-large-v3-turbo --local-dir $subtitle
+    conda run -n smartstudio huggingface-cli download dropbox-dash/faster-whisper-large-v3-turbo --local-dir $subtitle
   }
 }

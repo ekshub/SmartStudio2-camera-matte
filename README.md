@@ -229,7 +229,7 @@ python main.py --gui
 字幕模型需要单独下载到 `models/faster-whisper-large-v3-turbo`，否则服务会在字幕状态中显示模型路径错误。Windows 用户可以执行 `.\setup.ps1 -WithSubtitles` 自动下载模型；也可以使用 Hugging Face CLI：
 
 ```powershell
-huggingface-cli download Systran/faster-whisper-large-v3-turbo --local-dir models/faster-whisper-large-v3-turbo
+huggingface-cli download dropbox-dash/faster-whisper-large-v3-turbo --local-dir models/faster-whisper-large-v3-turbo
 ```
 
 摄像头模式的“跟随画面”音频来源是麦克风。字幕状态中的“音量”数值表示实际采集到的 PCM 电平；接近 `0.000` 说明系统没有把麦克风声音送进程序。程序会自动提升较低但有效的麦克风电平，并在 VAD 没有识别到内容时进行一次非 VAD 重试，避免安静说话被过滤。
