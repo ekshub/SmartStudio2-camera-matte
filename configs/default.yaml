@@ -1,0 +1,83 @@
+rvm:
+  variant: mobilenetv3
+  checkpoint: models/rvm_mobilenetv3.pth
+  fp16: true
+  downsample_ratio: 0.25
+runtime:
+  target_fps: 30
+  adaptive_quality: true
+  inference_scale: 1.0
+  inference_stride: 1
+  preserve_source_detail: false
+  processing_scale: 1.0
+  temporal_stabilization: true
+  temporal_strength: 0.28
+  connectivity_repair: true
+  connectivity_strength: 0.35
+  person_prior: false
+  person_prior_weights: yolo11n-seg.pt
+  person_prior_conf: 0.15
+  person_prior_every_n: 2
+matting:
+  mode: auto
+  screen_low_threshold: 0.45
+  screen_high_threshold: 0.65
+  hybrid_max_weight: 0.8
+  green_screen_optimized: true
+spill:
+  enabled: true
+  strength: 0.6
+harmonization:
+  enabled: true
+  strength: 0.15
+  temporal_ema: 0.1
+background:
+  kind: solid
+  value: [30, 60, 100]
+  loop: true
+effects:
+  enabled: true
+  outline: false
+  outline_width: 3
+  outline_opacity: 0.8
+  glow: false
+  glow_radius: 15
+  glow_opacity: 0.4
+  shadow: false
+  shadow_dx: 8
+  shadow_dy: 8
+  shadow_blur: 12
+  shadow_opacity: 0.4
+  text: ""
+  text_x: 20
+  text_y: 40
+  text_size: 1.0
+  logo: ""
+  outline_color: [255, 255, 255]
+  glow_color: [255, 255, 255]
+  shadow_color: [0, 0, 0]
+  text_opacity: 1.0
+  foreground_scale: 1.0
+  foreground_x: 0
+  foreground_y: 0
+  face_effect_enabled: false
+  face_accessory: none
+  face_effect_opacity: 0.95
+  face_effect_interval: 2
+  face_effect_max_faces: 2
+subtitles:
+  enabled: false
+  model: models/faster-whisper-large-v3-turbo
+  device: auto
+  compute_type: int8_float16
+  language: auto
+  audio_source: auto
+  microphone_device: default
+  system_audio_device: default
+  capture_seconds: 0.5
+  window_seconds: 10.0
+  minimum_seconds: 1.0
+  display_seconds: 3.5
+  update_seconds: 1.0
+  chunk_seconds: 2.5
+  hold_seconds: 4.0

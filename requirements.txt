@@ -1,0 +1,16 @@
+torch>=2.5
+torchvision
+opencv-python
+mediapipe==0.10.21
+PySide6
+PyYAML
+scipy
+numpy
+ultralytics
+Flask>=3.0
+pytest
+requests
+faster-whisper>=1.2
+imageio-ffmpeg>=0.6
+sounddevice>=0.5
+PyAudioWPatch>=0.2.12.8; platform_system == "Windows"

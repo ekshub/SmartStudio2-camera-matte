@@ -1,0 +1,10 @@
+models/*.pth
+models/*.pt
+output/
+logs/
+datasets/*
+!datasets/README.md
+__pycache__/
+*.pyc
+.pytest_cache/
+*.zip

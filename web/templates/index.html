@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SmartStudio 演播室</title>
+  <style>
+    :root{font-family:Inter,"Microsoft YaHei",sans-serif;color:#eef3fb;background:#111722}*{box-sizing:border-box}body{max-width:1320px;margin:0 auto;padding:20px;background:#111722}h1{font-size:24px;letter-spacing:0;margin:0 0 16px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px}.card{background:#192232;border:1px solid #324158;border-radius:8px;padding:15px}.preview{position:relative;width:100%;aspect-ratio:16/9;background:#05080d;border-radius:6px;display:flex;align-items:center;justify-content:center;overflow:hidden}.preview img{display:block;width:100%;height:100%;object-fit:contain}.subtitle{display:none;position:absolute;z-index:2;left:50%;bottom:7%;transform:translateX(-50%);max-width:86%;padding:8px 14px;border-radius:6px;background:rgba(0,0,0,.72);color:#fff;font-size:clamp(18px,2.2vw,30px);line-height:1.35;text-align:center;text-shadow:0 1px 2px #000;overflow-wrap:anywhere;pointer-events:none}.subtitle.visible{display:block}.status{display:flex;gap:15px;flex-wrap:wrap;margin-top:11px;color:#a9b8ce;font-size:13px}.status b{color:#72dbad}.group{border-top:1px solid #324158;padding-top:12px;margin-top:12px}.group:first-child{border-top:0;padding-top:0;margin-top:0}.group strong{font-size:15px}label{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:9px 0;font-size:14px;color:#d3dce9}select,input[type=text],input[type=number]{width:174px;padding:7px 8px;border:1px solid #465b77;border-radius:5px;background:#0f1724;color:#f4f7fb}input[type=range]{width:174px}button{border:0;border-radius:6px;padding:8px 12px;background:#2f75d8;color:#fff;cursor:pointer;margin:4px 4px 0 0}button.secondary{background:#35455c}button:hover{filter:brightness(1.12)}.hint{font-size:12px;color:#95a5bb;line-height:1.5;margin-top:10px}.substate{font-size:12px;color:#9eb0c8;min-height:18px}.substate.error{color:#ff9d9d}.scenes{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:8px}.scene{padding:0;border:2px solid transparent;background:#101824;overflow:hidden;border-radius:6px}.scene.selected{border-color:#72dbad}.scene img{display:block;width:100%;height:64px;object-fit:cover}.scene span{display:block;padding:4px;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-width:900px){body{padding:12px}.layout{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <h1>SmartStudio 专业演播室</h1>
+  <div class="layout">
+    <section class="card">
+      <div class="preview">
+        <img id="feed" src="/video_feed" alt="SmartStudio 实时画面">
+        <div id="subtitle" class="subtitle" role="status" aria-live="polite"></div>
+      </div>
+      <div class="status">
+        <span>状态：<b id="run">启动中</b></span><span>模式：<b id="mode">--</b></span>
+        <span>处理：<b id="pfps">--</b> FPS</span><span>延迟：<b id="lat">--</b> ms</span>
+        <span>帧号：<b id="fid">--</b></span><span>实时保护：<b id="guard">--</b></span>
+      </div>
+    </section>
+    <aside class="card">
+      <div class="group"><strong>输入源</strong>
+        <label>视频路径 <input id="source" type="text" value="{{ config.source.value }}"></label>
+        <button onclick="setSource()">应用视频</button><button class="secondary" onclick="setCamera()">摄像头 0</button>
+      </div>
+      <div class="group"><strong>实时字幕</strong>
+        <label>启用识别 <input id="sub_enabled" type="checkbox"></label>
+        <label>识别语言 <select id="sub_language"><option value="auto">自动检测</option><option value="zh">中文</option><option value="en">英语</option><option value="ja">日语</option><option value="ko">韩语</option><option value="fr">法语</option><option value="de">德语</option><option value="es">西班牙语</option><option value="ru">俄语</option></select></label>
+        <label>音频来源 <select id="sub_audio_source" onchange="updateAudioControls()"><option value="auto">跟随画面</option><option value="video">视频音轨</option><option value="microphone">麦克风</option><option value="system">电脑音频</option></select></label>
+        <label id="mic_device_row">麦克风 <select id="sub_microphone"><option value="default">系统默认麦克风</option></select></label>
+        <label id="system_device_row">播放设备 <select id="sub_system_audio"><option value="default">系统默认播放设备</option></select></label>
+        <button id="refresh_audio" type="button" class="secondary" onclick="loadAudioDevices()">刷新音频设备</button>
+        <div id="substate" class="substate">字幕未启用</div>
+      </div>
+      <div class="group"><strong>背景</strong>
+        <label>类型 <select id="bgkind" onchange="updateBackgroundControls()"><option>solid</option><option>blur</option><option>transparent</option><option>image</option><option>video</option></select></label>
+        <label>文件 <select id="bgvalue">{% for bg in backgrounds %}<option value="{{ bg }}">{{ bg }}</option>{% endfor %}</select></label>
+        <div class="scenes" id="sceneGallery">{% for bg in backgrounds %}<button type="button" class="scene" data-value="{{ bg }}" onclick="chooseScene(this)"><img src="/backgrounds/{{ bg.split('/')[-1] }}" loading="lazy" alt="{{ bg }}"><span>{{ bg.split('/')[-1] }}</span></button>{% endfor %}</div>
+      </div>
+      <div class="group"><strong>效果</strong>
+        <label>总开关 <input id="e_enabled" type="checkbox"></label><label>描边 <input id="e_outline" type="checkbox"></label><label>辉光 <input id="e_glow" type="checkbox"></label><label>阴影 <input id="e_shadow" type="checkbox"></label>
+        <label>描边宽度 <input id="e_width" type="range" min="1" max="12"></label><label>辉光半径 <input id="e_radius" type="range" min="1" max="40"></label><label>文字 <input id="e_text" type="text" maxlength="120" placeholder="可选"></label>
+        <label>人脸饰品 <select id="face_accessory"><option value="none">关闭</option><option value="glasses">眼镜</option><option value="sunglasses">墨镜</option><option value="hat">帽子</option></select></label><label>启用跟踪 <input id="face_effect_enabled" type="checkbox"></label>
+      </div>
+      <div class="group"><strong>质量</strong><label>处理比例 <input id="scale" type="range" min="25" max="100" step="5"></label><label>多人先验 <input id="prior" type="checkbox"></label></div>
+      <button id="apply_settings" onclick="apply()">应用设置</button><button class="secondary" onclick="resetState()">重置时序</button><button class="secondary" onclick="snapshot()">下载截图</button>
+      <div class="hint">“跟随画面”会为视频读取文件音轨、为摄像头使用麦克风。“电脑音频”通过 Windows WASAPI 识别耳机或扬声器正在播放的声音。</div>
+    </aside>
+  </div>
+<script>
+const $=id=>document.getElementById(id); const cfg={{ config|tojson }};
+function chooseScene(el){$('bgkind').value='image';$('bgvalue').value=el.dataset.value;updateBackgroundControls();document.querySelectorAll('.scene').forEach(x=>x.classList.remove('selected'));el.classList.add('selected')}
+function updateAudioControls(){const source=$('sub_audio_source').value;$('mic_device_row').style.display=source==='microphone'||source==='auto'?'flex':'none';$('system_device_row').style.display=source==='system'?'flex':'none'}
+function setDeviceOptions(id,items,defaultLabel){const select=$(id),current=select.value;select.replaceChildren(new Option(defaultLabel,'default'));for(const item of items)select.add(new Option(item.name+' · '+item.host_api,item.id));select.value=[...select.options].some(x=>x.value===current)?current:'default'}
+async function loadAudioDevices(){const b=$('refresh_audio');b.disabled=true;try{const r=await fetch('/api/audio/devices?x='+Date.now());if(!r.ok)throw new Error('HTTP '+r.status);const data=await r.json();setDeviceOptions('sub_microphone',data.microphones||[],'系统默认麦克风');setDeviceOptions('sub_system_audio',data.system_audio||[],'系统默认播放设备');if(data.errors?.length)$('substate').textContent=data.errors.join('；');else $('substate').textContent='音频设备已刷新：'+(data.microphones||[]).length+' 个麦克风 / '+(data.system_audio||[]).length+' 个电脑音频设备'}catch(e){$('substate').textContent='音频设备读取失败：'+e.message}finally{b.disabled=false}}
+function updateBackgroundControls(){ $('bgvalue').disabled=$('bgkind').value==='solid'; }
+function fill(c){$('bgkind').value=c.background.kind;const rawBgValue=c.background.value;const bgValue=Array.isArray(rawBgValue)?'':(rawBgValue||'');const bgRelative=String(bgValue).replaceAll('\\','/');const matched=[...$('bgvalue').options].find(o=>o.value===bgRelative||(bgRelative&&bgRelative.endsWith('/'+o.value)));$('bgvalue').value=matched?matched.value:bgValue;$('scale').value=Math.round(c.processing_scale*100);$('prior').checked=c.person_prior;$('sub_enabled').checked=!!c.subtitles.enabled;$('sub_language').value=c.subtitles.language||'auto';$('sub_audio_source').value=c.subtitles.audio_source||'auto';$('sub_microphone').value=c.subtitles.microphone_device||'default';$('sub_system_audio').value=c.subtitles.system_audio_device||'default';updateAudioControls();updateBackgroundControls();for(const k of ['enabled','outline','glow','shadow'])$('e_'+k).checked=!!c.effects[k];$('e_width').value=c.effects.outline_width;$('e_radius').value=c.effects.glow_radius;$('e_text').value=c.effects.text||'';$('face_accessory').value=c.effects.face_accessory||'none';$('face_effect_enabled').checked=!!c.effects.face_effect_enabled;const selectedBg=matched?matched.value:bgValue;document.querySelectorAll('.scene').forEach(x=>x.classList.toggle('selected',x.dataset.value===selectedBg))}
+async function apply(){const button=$('apply_settings');button.disabled=true;const oldText=button.textContent;button.textContent='应用中...';try{const kind=$('bgkind').value;const body={processing_scale:+$('scale').value/100,person_prior:$('prior').checked,subtitles:{enabled:$('sub_enabled').checked,language:$('sub_language').value,audio_source:$('sub_audio_source').value,microphone_device:$('sub_microphone').value,system_audio_device:$('sub_system_audio').value},effects:{enabled:$('e_enabled').checked,outline:$('e_outline').checked,glow:$('e_glow').checked,shadow:$('e_shadow').checked,outline_width:+$('e_width').value,glow_radius:+$('e_radius').value,text:$('e_text').value,face_effect_enabled:$('face_effect_enabled').checked,face_accessory:$('face_accessory').value,face_effect_opacity:.95,face_effect_interval:2,face_effect_max_faces:2},background:{kind:kind,value:kind==='solid'?undefined:$('bgvalue').value}};const r=await fetch('/api/config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||('HTTP '+r.status));fill(j.config);$('substate').textContent='设置已应用'}catch(e){$('substate').textContent='设置应用失败：'+e.message}finally{button.disabled=false;button.textContent=oldText}}
+async function setSource(){const r=await fetch('/api/source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'video',value:$('source').value})});const j=await r.json();if(!j.ok)alert(j.error)}
+async function setCamera(){const r=await fetch('/api/source',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'camera',value:0})});const j=await r.json();if(!j.ok)alert(j.error)}
+async function resetState(){await fetch('/api/reset',{method:'POST'})}
+function snapshot(){fetch('/api/snapshot',{method:'POST'}).then(r=>r.blob()).then(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='smartstudio_snapshot.jpg';a.click();URL.revokeObjectURL(a.href)})}
+const stateNames={disabled:'未启用',loading:'正在加载模型',listening:'正在监听',transcribing:'正在识别',error:'识别错误'};
+const sourceNames={video:'视频音轨',microphone:'麦克风',system:'电脑音频'};
+async function poll(){try{const s=await (await fetch('/api/status?x='+Date.now())).json();$('run').textContent=s.running?'运行中':'已停止';$('mode').textContent=s.mode;$('pfps').textContent=s.processing_fps;$('lat').textContent=s.latency_ms;$('fid').textContent=s.frame_id;$('guard').textContent=s.quality_guard?'已自动降档':'正常';const sub=s.subtitle||{};const content=sub.enabled?(sub.text||''):'';$('subtitle').textContent=content;$('subtitle').classList.toggle('visible',!!content);let detail=stateNames[sub.status]||sub.status||'--';if(sub.audio_source)detail+=' · '+(sourceNames[sub.audio_source]||sub.audio_source);if(sub.device)detail+=' · '+sub.device.toUpperCase();if(sub.language)detail+=' · '+sub.language.toUpperCase()+' · '+sub.latency_ms+' ms';if(sub.error)detail+='：'+sub.error;$('substate').textContent=detail;$('substate').classList.toggle('error',sub.status==='error')}catch(e){$('run').textContent='连接失败'}}
+setInterval(poll,500);loadAudioDevices().then(()=>fill(cfg));poll();
+</script>
+</body>
+</html>
