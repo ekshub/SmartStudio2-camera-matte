@@ -219,6 +219,8 @@ class LiveSubtitleEngine:
             "audio_source": self._effective_audio_source(),
             "audio_device": "default",
             "update_interval_ms": 0.0,
+            "audio_level": 0.0,
+            "speech_detected": False,
         }
         self._last_result_at = 0.0
         self._thread = threading.Thread(target=self._worker, name="smartstudio-subtitles", daemon=True)
@@ -307,6 +309,8 @@ class LiveSubtitleEngine:
                 "estimated_delay_ms": round(
                     float(self.config.update_seconds) * 1000 + float(self._state["latency_ms"]), 2
                 ),
+                "audio_level": round(float(self._state["audio_level"]), 4),
+                "speech_detected": bool(self._state["speech_detected"]),
             }
 
     def prepare(self):
@@ -389,6 +393,16 @@ class LiveSubtitleEngine:
             without_timestamps=recent_seconds is None,
         )
         segments = list(segments)
+        # Low-level microphones are commonly rejected by Silero VAD. Retry
+        # without VAD only when the signal has real energy; this preserves
+        # silence protection while recovering quiet speech.
+        if vad_filter and not segments and float(np.sqrt(np.mean(np.square(audio)))) > .006:
+            segments, info = self._model.transcribe(
+                audio, language=language, beam_size=1, vad_filter=False,
+                condition_on_previous_text=False,
+                without_timestamps=recent_seconds is None,
+            )
+            segments = list(segments)
         audio_seconds = audio.size / self.SAMPLE_RATE
         # Whisper can emit a high-confidence 30-second template for a much
         # shorter non-speech window. Reject timestamp-impossible segments
@@ -425,6 +439,7 @@ class LiveSubtitleEngine:
                 update_interval_ms=(
                     (completed_at - self._last_result_at) * 1000 if self._last_result_at else 0.0
                 ),
+                speech_detected=bool(text),
             )
             self._last_result_at = completed_at
 
@@ -482,7 +497,18 @@ class LiveSubtitleEngine:
                             break
                     if audio.size < capture_frames // 2:
                         raise RuntimeError("audio stream ended unexpectedly")
+                    # USB/webcam microphones may report quiet PCM. Normalize
+                    # low-level speech before VAD/Whisper while leaving true
+                    # silence untouched.
+                    if audio_source == "microphone" and audio.size:
+                        rms = float(np.sqrt(np.mean(np.square(audio))))
+                        if .0015 < rms < .08:
+                            audio = np.clip(audio * min(6.0, .045 / rms), -1.0, 1.0).astype(np.float32)
                     rolling = np.concatenate((rolling, audio))[-window_frames:]
+                    level = float(np.sqrt(np.mean(np.square(audio)))) if audio.size else 0.0
+                    with self._lock:
+                        self._state["audio_level"] = level
+                        self._state["speech_detected"] = level > .006
                     captured_since_update += audio.size
                     if rolling.size < minimum_frames or captured_since_update < update_frames:
                         continue

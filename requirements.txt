@@ -11,6 +11,7 @@ Flask>=3.0
 pytest
 requests
 faster-whisper>=1.2
+huggingface-hub>=0.24
 imageio-ffmpeg>=0.6
 sounddevice>=0.5
 PyAudioWPatch>=0.2.12.8; platform_system == "Windows"
